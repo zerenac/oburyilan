@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Çılgın Yılan - Görselli</title>
+    <title>Çılgın Yılan Oyunu</title>
     <style>
         body {
             background-color: #121212;
@@ -43,7 +43,7 @@
 </head>
 <body>
 
-    <h1>ÇILGIN YILAN - GÖRSELLİ</h1>
+    <h1>ÇILGIN YILAN OYUNU</h1>
     <div id="score-board">Skor: <span id="score">0</span> | Yemek Sayısı: <span id="food-count">0</span>/5</div>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
     <div class="instructions">Yön tuşları ile kontrol et. Duvarlardan geçebilirsin!</div>
@@ -79,27 +79,21 @@
         let isPaused = false;
         let gameSpeed = 100;
 
-        // --- YENİLENEN GÖRSEL YÜKLEME BÖLÜMÜ ---
+        // Görsel Yükleme Mekaniği
         const snakeHeadImg = new Image();
         let imageLoaded = false;
-        let imageError = false;
-
-        // Görseli yüklemeye başla
+        
         snakeHeadImg.src = 'head.png'; 
 
         snakeHeadImg.onload = () => {
             imageLoaded = true;
-            imageError = false;
-            console.log("Yılan başı görseli başarıyla yüklendi: head.png");
+            console.log("Yılan başı görseli başarıyla yüklendi.");
         };
 
         snakeHeadImg.onerror = () => {
             imageLoaded = false;
-            imageError = true;
-            console.error("HATA: Yılan başı görseli (head.png) yüklenemedi. Lütfen dosyanın 'dene.html' ile aynı klasörde ve adının doğru olduğundan emin ol.");
-            console.error("Tarayıcı güvenlik kısıtlamaları (CORS) nedeniyle bazen yerel dosyalarda bu hata oluşabilir. Canlı bir sunucuda (örneğin GitHub Pages) sorunsuz çalışacaktır.");
+            console.error("Görsel yüklenemedi. Lütfen 'head.png' dosyasının deponun ana dizininde olduğundan emin olun.");
         };
-        // ---------------------------------------
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
@@ -169,25 +163,14 @@
                 let offset = (gridSize - sizeFactor) / 2;
 
                 if (index === 0) {
-                    // --- YENİLENEN ÇİZİM MANTIĞI ---
                     if (imageLoaded) {
-                        // Görsel yüklendiyse onu çiz
                         ctx.drawImage(snakeHeadImg, part.x * gridSize, part.y * gridSize, gridSize, gridSize);
                     } else {
-                        // Görsel yüklenmediyse veya hata varsa yedek turkuaz kutuyu çiz
+                        // Görsel yüklenene kadar veya yüklenemezse yedek kutu
                         ctx.fillStyle = "#00ffcc";
                         ctx.fillRect(part.x * gridSize + offset, part.y * gridSize + offset, sizeFactor, sizeFactor);
-                        
-                        // Hata varsa ekrana uyarı yazalım ki kullanıcı sorunu bilsin
-                        if (imageError) {
-                             ctx.fillStyle = "red";
-                             ctx.font = "10px sans-serif";
-                             ctx.fillText("Görsel Yok", part.x * gridSize, part.y * gridSize + gridSize);
-                        }
                     }
-                    // -------------------------------
                 } else {
-                    // Gövde kısmı
                     ctx.fillStyle = "#00adb5";
                     ctx.fillRect(part.x * gridSize + offset, part.y * gridSize + offset, sizeFactor, sizeFactor);
                 }
