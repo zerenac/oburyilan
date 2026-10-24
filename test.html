@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Çılgın Yılan Oyunu - Tam Sürüm</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        h1 {
+            margin-bottom: 5px;
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            color: #00ffcc;
+        }
+        #score-board {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        canvas {
+            border: 4px solid #333;
+            background-color: #1e1e1e;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 8px;
+        }
+        .instructions {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>ÇILGIN YILAN OYUNU</h1>
+    <div id="score-board">Skor: <span id="score">0</span> | Yemek Sayısı: <span id="food-count">0</span>/5</div>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div class="instructions">Yön tuşları ile yılanı hareket ettir. Her 5 yemekte bir tuvalet molası!</div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+
+        let snake = [
+            { x: 10, y: 10 },
+            { x: 9, y: 10 },
+            { x: 8, y: 10 }
+        ];
+        
+        // Farklı yiyecekler listesi (Emoji ve isimleri)
+        const foodTypes = [
+            { emoji: "🍗", name: "Tavuk Butu" },
+            { emoji: "🍔", name: "Hamburger" },
+            { emoji: "🍕", name: "Pizza" },
+            { emoji: "🌭", name: "Sosisli" },
+            { emoji: "🍟", name: "Patates Kızartması" }
+        ];
+        
+        let currentFood = { x: 5, y: 5, type: foodTypes[0] };
+        let dx = 1;
+        let dy = 0;
+        let score = 0;
+        let eatenFoodCount = 0; // 5 yemek sayacı için
+        let gameInterval;
+        let changingDirection = false;
+        let isPaused = false; // Tuvalet molası için durdurma bayrağı
+
+        let gameSpeed = 100;
+
+        // Web Audio API ile ses üretici (Dosya gerektirmez)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playEatSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            // İştah açıcı yükselen ses efekti
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.15);
+        }
+
+        function playToiletSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.5);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        document.addEventListener("keydown", changeDirection);
+
+        function main() {
+            if (isPaused) return; // Tuvalet molasındaysa oyunu dondur
+
+            if (hasGameEnded()) {
+                alert("Oyun Bitti! Skorun: " + score);
+                resetGame();
+                return;
+            }
+
+            changingDirection = false;
+            clearCanvas();
+            drawFood();
+            moveSnake();
+            drawSnake();
+        }
+
+        startGame();
+
+        function startGame() {
+            gameInterval = setInterval(main, gameSpeed);
+            generateFood();
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = "#1e1e1e";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawSnake() {
+            snake.forEach((part, index) => {
+                // Yedikçe karnı ve gıdığı büyüsün: Yenen yemek sayısına göre kalınlaşır
+                let sizeFactor = Math.min(gridSize - 2 + (eatenFoodCount * 0.5), gridSize + 4);
+                
+                // Baş yeşil, gövde turkuaz
+                ctx.fillStyle = index === 0 ? "#00ffcc" : "#00adb5";
+                
+                let offset = (gridSize - sizeFactor) / 2;
+                ctx.fillRect(part.x * gridSize + offset, part.y * gridSize + offset, sizeFactor, sizeFactor);
+            });
+        }
+
+        function moveSnake() {
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            snake.unshift(head);
+
+            const hasEatenFood = snake[0].x === currentFood.x && snake[0].y === currentFood.y;
+            if (hasEatenFood) {
+                score += 10;
+                eatenFoodCount++;
+                document.getElementById("score").innerText = score;
+                document.getElementById("food-count").innerText = eatenFoodCount % 5;
+                
+                playEatSound(); // İştah sesi çal
+
+                // 5 yemek oldu mu? Tuvalet molası vakti!
+                if (eatenFoodCount === 5) {
+                    triggerToiletBreak();
+                } else {
+                    generateFood();
+                }
+            } else {
+                snake.pop();
+            }
+        }
+
+        function triggerToiletBreak() {
+            isPaused = true;
+            playToiletSound();
+
+            // Ekranda tuvalet molası göster
+            clearCanvas();
+            ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#ff5722";
+            ctx.font = "bold 24px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("🚽 TUVALET MOL
