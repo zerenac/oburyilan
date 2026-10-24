@@ -157,23 +157,28 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
-      function drawSnake() {
+ function drawSnake() {
             snake.forEach((part, index) => {
                 let sizeFactor = Math.min(gridSize - 2 + (eatenFoodCount * 0.5), gridSize + 4);
                 let offset = (gridSize - sizeFactor) / 2;
 
                 if (index === 0) {
                     if (imageLoaded) {
-                        // Kafayı hücreye tam oturtmak ve biraz daha dolgun göstermek için boyut artırıldı
-                        let headSize = gridSize * 1.5; // Kafayı biraz daha büyük yapıyoruz
-                        let headOffset = (headSize - gridSize) / 2;
-                        ctx.drawImage(
-                            snakeHeadImg, 
-                            (part.x * gridSize) - headOffset, 
-                            (part.y * gridSize) - headOffset, 
-                            headSize, 
-                            headSize
+                        ctx.save();
+                        // Beyaz köşeleri gizlemek için kafayı daire şeklinde kırpıyoruz (Clipping)
+                        ctx.beginPath();
+                        ctx.arc(
+                            (part.x * gridSize) + (gridSize / 2), 
+                            (part.y * gridSize) + (gridSize / 2), 
+                            gridSize / 2, 
+                            0, 
+                            Math.PI * 2
                         );
+                        ctx.clip();
+
+                        // Görseli çiz
+                        ctx.drawImage(snakeHeadImg, part.x * gridSize, part.y * gridSize, gridSize, gridSize);
+                        ctx.restore();
                     } else {
                         ctx.fillStyle = "#00ffcc";
                         ctx.fillRect(part.x * gridSize + offset, part.y * gridSize + offset, sizeFactor, sizeFactor);
