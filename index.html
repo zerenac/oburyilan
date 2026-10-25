@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Çılgın Yılan Oyunu - Akıcı Swipe</title>
+    <title>Çılgın Yılan Oyunu - Dokun-Yönlendir</title>
     <style>
         body {
             background-color: #121212;
@@ -18,7 +18,7 @@
             overflow: hidden;
             -webkit-user-select: none;
             user-select: none;
-            touch-action: none; /* Sayfanın mobil tarayıcıda aşağı yukarı kaymasını tamamen engeller */
+            touch-action: none;
         }
         h1 {
             margin: 5px 0;
@@ -38,12 +38,12 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             border-radius: 8px;
             max-width: 90vw;
-            max-height: 65vh;
+            max-height: 60vh;
             touch-action: none;
         }
         .instructions {
-            margin-top: 20px;
-            font-size: 0.95rem;
+            margin-top: 15px;
+            font-size: 0.9rem;
             color: #00ffcc;
             text-align: center;
             padding: 0 15px;
@@ -58,7 +58,7 @@
     
     <canvas id="gameCanvas" width="400" height="400"></canvas>
     
-    <div class="instructions">📱 Telefonda ekranda parmağını istediğin yöne kaydır (Swipe)!</div>
+    <div class="instructions">📱 Telefonda oyun alanının sağ/sol/üst/alt kısmına dokunarak yön ver!</div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -128,7 +128,7 @@
             osc.stop(audioCtx.currentTime + 0.5);
         }
 
-        // --- KLAVYE KONTROLLERİ (Bilgisayar İçin) ---
+        // --- KLAVYE KONTROLLERİ ---
         document.addEventListener("keydown", changeDirectionKeyboard);
 
         function changeDirectionKeyboard(event) {
@@ -139,52 +139,35 @@
             if (keyPressed === 40) setDir('DOWN');
         }
 
-        // --- BUTONSUZ & TERTEMİZ DOKUNMATİK SWIPE MİMARİSİ ---
-        let touchStartX = 0;
-        let touchStartY = 0;
-
+        // --- DOKUN-YÖNLENDİR (TAP-TO-MOVE) MİMARİSİ ---
         canvas.addEventListener('touchstart', (e) => {
             if (e.touches && e.touches.length > 0) {
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
-            }
-        }, { passive: true });
+                const rect = canvas.getBoundingClientRect();
+                const touchX = e.touches[0].clientX - rect.left;
+                const touchY = e.touches[0].clientY - rect.top;
 
-        canvas.addEventListener('touchmove', (e) => {
-            // Parmağın ekranda kayarken sayfayı oynatmasını engeller
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+
+                const diffX = touchX - centerX;
+                const diffY = touchY - centerY;
+
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    if (diffX > 0) {
+                        setDir('RIGHT');
+                    } else {
+                        setDir('LEFT');
+                    }
+                } else {
+                    if (diffY > 0) {
+                        setDir('DOWN');
+                    } else {
+                        setDir('UP');
+                    }
+                }
+            }
             e.preventDefault();
         }, { passive: false });
-
-        canvas.addEventListener('touchend', (e) => {
-            if (!touchStartX || !touchStartY) return;
-
-            let touchEndX = e.changedTouches[0].clientX;
-            let touchEndY = e.changedTouches[0].clientY;
-
-            let diffX = touchEndX - touchStartX;
-            let diffY = touchEndY - touchStartY;
-
-            // Çok ufak oynamaları (yanlış dokunmaları) elemek için eşik değeri
-            const threshold = 25;
-
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                // Yatay hareket baskın
-                if (Math.abs(diffX) > threshold) {
-                    if (diffX > 0) setDir('RIGHT');
-                    else setDir('LEFT');
-                }
-            } else {
-                // Dikey hareket baskın
-                if (Math.abs(diffY) > threshold) {
-                    if (diffY > 0) setDir('DOWN');
-                    else setDir('UP');
-                }
-            }
-
-            // Koordinatları sıfırla
-            touchStartX = 0;
-            touchStartY = 0;
-        }, { passive: true });
 
         function setDir(dir) {
             if (changingDirection) return;
