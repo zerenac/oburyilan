@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Çılgın Yılan Oyunu - Mobil Swiping</title>
+    <title>Çılgın Yılan Oyunu - Mobil Swipe</title>
     <style>
         body {
             background-color: #121212;
@@ -16,7 +16,7 @@
             min-height: 100vh;
             margin: 0;
             overflow: hidden;
-            touch-action: none; /* Sayfanın kaydırılmasını engelle, sadece oyuna odaklan */
+            touch-action: none;
         }
         h1 {
             margin: 5px 0;
@@ -52,7 +52,7 @@
     <h1>ÇILGIN YILAN</h1>
     <div id="score-board">Skor: <span id="score">0</span> | Yemek: <span id="food-count">0</span>/5</div>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
-    <div class="instructions">Telefonda ekranda parmağını kaydır (Swipe), bilgisayarda ok tuşlarını kullan!</div>
+    <div class="instructions">Telefonda ekranda parmağını kaydır, bilgisayarda ok tuşlarını kullan!</div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -133,21 +133,16 @@
             if (keyPressed === 40) setDir('DOWN');
         }
 
-        // --- DOKUNMATİK KAYDIRMA (SWIPE) KONTROLLERİ ---
+        // --- GELİŞTİRİLMİŞ DOKUNMATİK (SWIPE) KONTROLLERİ ---
         let touchStartX = 0;
         let touchStartY = 0;
 
-        canvas.addEventListener('touchstart', (e) => {
+        window.addEventListener('touchstart', (e) => {
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
-            e.preventDefault();
-        }, { passive: false });
+        }, { passive: true });
 
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault(); // Sayfanın kaymasını engeller
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', (e) => {
+        window.addEventListener('touchend', (e) => {
             if (!touchStartX || !touchStartY) return;
 
             let touchEndX = e.changedTouches[0].clientX;
@@ -156,18 +151,16 @@
             let diffX = touchEndX - touchStartX;
             let diffY = touchEndY - touchStartY;
 
-            // Kaydırma mesafesi çok kısaysa algılama (yanlış dokunmaları önlemek için)
-            if (Math.abs(diffX) < 30 && Math.abs(diffY) < 30) return;
+            // Hassasiyet eşiği (yanlış dokunmaları önlemek için)
+            if (Math.abs(diffX) < 20 && Math.abs(diffY) < 20) return;
 
             if (Math.abs(diffX) > Math.abs(diffY)) {
-                // Yatay kaydırma
                 if (diffX > 0) {
                     setDir('RIGHT');
                 } else {
                     setDir('LEFT');
                 }
             } else {
-                // Dikey kaydırma
                 if (diffY > 0) {
                     setDir('DOWN');
                 } else {
@@ -177,8 +170,7 @@
 
             touchStartX = 0;
             touchStartY = 0;
-            e.preventDefault();
-        }, { passive: false });
+        }, { passive: true });
 
         function setDir(dir) {
             if (changingDirection) return;
