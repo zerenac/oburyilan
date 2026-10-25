@@ -2,8 +2,8 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Çılgın Yılan Oyunu</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Çılgın Yılan Oyunu - Mobil Uyumlu</title>
     <style>
         body {
             background-color: #121212;
@@ -13,19 +13,21 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             overflow: hidden;
+            touch-action: manipulation;
         }
         h1 {
-            margin-bottom: 5px;
-            font-size: 1.8rem;
+            margin: 5px 0;
+            font-size: 1.5rem;
             letter-spacing: 2px;
             color: #00ffcc;
+            text-align: center;
         }
         #score-board {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
             font-weight: bold;
         }
         canvas {
@@ -33,20 +35,66 @@
             background-color: #1e1e1e;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             border-radius: 8px;
+            max-width: 90vw;
+            max-height: 50vh;
+        }
+        #touch-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 15px;
+            gap: 5px;
+        }
+        .horizontal-controls {
+            display: flex;
+            gap: 60px;
+        }
+        .ctrl-btn {
+            width: 60px;
+            height: 60px;
+            background-color: #333;
+            color: #00ffcc;
+            border: 2px solid #00ffcc;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: background 0.1s, transform 0.1s;
+        }
+        .ctrl-btn:active {
+            background-color: #00ffcc;
+            color: #121212;
+            transform: scale(0.95);
         }
         .instructions {
-            margin-top: 15px;
-            font-size: 0.9rem;
+            margin-top: 10px;
+            font-size: 0.85rem;
             color: #888;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <h1>ÇILGIN YILAN OYUNU</h1>
-    <div id="score-board">Skor: <span id="score">0</span> | Yemek Sayısı: <span id="food-count">0</span>/5</div>
+    <h1>ÇILGIN YILAN</h1>
+    <div id="score-board">Skor: <span id="score">0</span> | Yemek: <span id="food-count">0</span>/5</div>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
-    <div class="instructions">Yön tuşları ile kontrol et. Duvarlardan geçebilirsin!</div>
+
+    <div id="touch-controls">
+        <button class="ctrl-btn" onclick="changeDirectionMobile('UP')">⬆️</button>
+        <div class="horizontal-controls">
+            <button class="ctrl-btn" onclick="changeDirectionMobile('LEFT')">⬅️</button>
+            <button class="ctrl-btn" onclick="changeDirectionMobile('RIGHT')">➡️</button>
+        </div>
+        <button class="ctrl-btn" onclick="changeDirectionMobile('DOWN')">⬇️</button>
+    </div>
+
+    <div class="instructions">Klavyeyi kullan veya butonlara dokun!</div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -79,21 +127,10 @@
         let isPaused = false;
         let gameSpeed = 100;
 
-        // Görsel Yükleme Mekaniği
         const snakeHeadImg = new Image();
         let imageLoaded = false;
-        
         snakeHeadImg.src = 'head.png'; 
-
-        snakeHeadImg.onload = () => {
-            imageLoaded = true;
-            console.log("Yılan başı görseli başarıyla yüklendi.");
-        };
-
-        snakeHeadImg.onerror = () => {
-            imageLoaded = false;
-            console.error("Görsel yüklenemedi. Lütfen 'head.png' dosyasının deponun ana dizininde olduğundan emin olun.");
-        };
+        snakeHeadImg.onload = () => { imageLoaded = true; };
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
@@ -127,7 +164,33 @@
             osc.stop(audioCtx.currentTime + 0.5);
         }
 
-        document.addEventListener("keydown", changeDirection);
+        document.addEventListener("keydown", changeDirectionKeyboard);
+
+        function changeDirectionKeyboard(event) {
+            const keyPressed = event.keyCode;
+            if (keyPressed === 37) setDir('LEFT');
+            if (keyPressed === 38) setDir('UP');
+            if (keyPressed === 39) setDir('RIGHT');
+            if (keyPressed === 40) setDir('DOWN');
+        }
+
+        function changeDirectionMobile(dir) {
+            setDir(dir);
+        }
+
+        function setDir(dir) {
+            if (changingDirection) return;
+
+            const goingUp = dy === -1;
+            const goingDown = dy === 1;
+            const goingRight = dx === 1;
+            const goingLeft = dx === -1;
+
+            if (dir === 'LEFT' && !goingRight) { dx = -1; dy = 0; changingDirection = true; }
+            if (dir === 'UP' && !goingDown) { dx = 0; dy = -1; changingDirection = true; }
+            if (dir === 'RIGHT' && !goingLeft) { dx = 1; dy = 0; changingDirection = true; }
+            if (dir === 'DOWN' && !goingUp) { dx = 0; dy = 1; changingDirection = true; }
+        }
 
         function main() {
             if (isPaused) return;
@@ -157,7 +220,7 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
- function drawSnake() {
+        function drawSnake() {
             snake.forEach((part, index) => {
                 let sizeFactor = Math.min(gridSize - 2 + (eatenFoodCount * 0.5), gridSize + 4);
                 let offset = (gridSize - sizeFactor) / 2;
@@ -165,19 +228,28 @@
                 if (index === 0) {
                     if (imageLoaded) {
                         ctx.save();
-                        // Beyaz köşeleri gizlemek için kafayı daire şeklinde kırpıyoruz (Clipping)
+                        // Kafanın merkezine git ve yönüne göre döndür
+                        let x = (part.x * gridSize) + (gridSize / 2);
+                        let y = (part.y * gridSize) + (gridSize / 2);
+                        
+                        ctx.translate(x, y);
+
+                        // Gidiş yönüne göre açı belirleme
+                        let angle = 0;
+                        if (dx === 1) angle = 0;          // Sağa
+                        else if (dx === -1) angle = Math.PI; // Sola
+                        else if (dy === -1) angle = -Math.PI / 2; // Yukarı
+                        else if (dy === 1) angle = Math.PI / 2;  // Aşağı
+
+                        ctx.rotate(angle);
+
+                        // Yuvarlak maske ile beyaz köşeleri yok et
                         ctx.beginPath();
-                        ctx.arc(
-                            (part.x * gridSize) + (gridSize / 2), 
-                            (part.y * gridSize) + (gridSize / 2), 
-                            gridSize / 2, 
-                            0, 
-                            Math.PI * 2
-                        );
+                        ctx.arc(0, 0, gridSize / 2, 0, Math.PI * 2);
                         ctx.clip();
 
-                        // Görseli çiz
-                        ctx.drawImage(snakeHeadImg, part.x * gridSize, part.y * gridSize, gridSize, gridSize);
+                        // Görseli merkeze oturacak şekilde çiz
+                        ctx.drawImage(snakeHeadImg, -gridSize / 2, -gridSize / 2, gridSize, gridSize);
                         ctx.restore();
                     } else {
                         ctx.fillStyle = "#00ffcc";
@@ -189,6 +261,7 @@
                 }
             });
         }
+
         function moveSnake() {
             let headX = snake[0].x + dx;
             let headY = snake[0].y + dy;
@@ -229,12 +302,12 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             ctx.fillStyle = "#ff5722";
-            ctx.font = "bold 24px sans-serif";
+            ctx.font = "bold 22px sans-serif";
             ctx.textAlign = "center";
             ctx.fillText("🚽 TUVALET MOLASI! 🚽", canvas.width / 2, canvas.height / 2 - 20);
             
             ctx.fillStyle = "#e0e0e0";
-            ctx.font = "16px sans-serif";
+            ctx.font = "15px sans-serif";
             ctx.fillText("Yılan klozete oturdu, hafifliyor...", canvas.width / 2, canvas.height / 2 + 20);
 
             setTimeout(() => {
@@ -276,23 +349,6 @@
                 if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) selfCollision = true;
             }
             return selfCollision;
-        }
-
-        function changeDirection(event) {
-            const keyPressed = event.keyCode;
-            const LEFT = 37, UP = 38, RIGHT = 39, DOWN = 40;
-
-            if (changingDirection) return;
-
-            const goingUp = dy === -1;
-            const goingDown = dy === 1;
-            const goingRight = dx === 1;
-            const goingLeft = dx === -1;
-
-            if (keyPressed === LEFT && !goingRight) { dx = -1; dy = 0; changingDirection = true; }
-            if (keyPressed === UP && !goingDown) { dx = 0; dy = -1; changingDirection = true; }
-            if (keyPressed === RIGHT && !goingLeft) { dx = 1; dy = 0; changingDirection = true; }
-            if (keyPressed === DOWN && !goingUp) { dx = 0; dy = 1; changingDirection = true; }
         }
 
         function resetGame() {
