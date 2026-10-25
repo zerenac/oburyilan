@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Çılgın Yılan Oyunu - Kesin Mobil Swipe</title>
+    <title>Çılgın Yılan Oyunu - Mobil Butonlu</title>
     <style>
         body {
             background-color: #121212;
@@ -18,6 +18,7 @@
             overflow: hidden;
             -webkit-user-select: none;
             user-select: none;
+            touch-action: manipulation;
         }
         h1 {
             margin: 5px 0;
@@ -28,7 +29,7 @@
         }
         #score-board {
             font-size: 1.1rem;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             font-weight: bold;
         }
         canvas {
@@ -37,15 +38,46 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             border-radius: 8px;
             max-width: 90vw;
-            max-height: 60vh;
-            touch-action: none; /* Mobilde sayfayı kaydırmayı engeller, dokunmayı tamamen oyuna verir */
+            max-height: 45vh;
+        }
+        /* Minimalist ve Şık Mobil Kontrol Paneli */
+        #touch-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 15px;
+            gap: 8px;
+        }
+        .horizontal-controls {
+            display: flex;
+            gap: 80px;
+        }
+        .ctrl-btn {
+            width: 65px;
+            height: 65px;
+            background-color: rgba(51, 51, 51, 0.8);
+            color: #00ffcc;
+            border: 2px solid #00ffcc;
+            border-radius: 50%;
+            font-size: 1.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            outline: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            transition: background 0.1s, transform 0.1s;
+        }
+        .ctrl-btn:active {
+            background-color: #00ffcc;
+            color: #121212;
+            transform: scale(0.92);
         }
         .instructions {
-            margin-top: 15px;
-            font-size: 0.9rem;
+            margin-top: 10px;
+            font-size: 0.85rem;
             color: #888;
             text-align: center;
-            padding: 0 10px;
         }
     </style>
 </head>
@@ -54,7 +86,18 @@
     <h1>ÇILGIN YILAN</h1>
     <div id="score-board">Skor: <span id="score">0</span> | Yemek: <span id="food-count">0</span>/5</div>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
-    <div class="instructions">Telefonda oyun alanına parmağını koyup kaydır (Swipe), bilgisayarda ok tuşlarını kullan!</div>
+
+    <!-- Dokunmatik Kontrol Paneli -->
+    <div id="touch-controls">
+        <button class="ctrl-btn" ontstart="setDir('UP'); event.preventDefault();" onclick="setDir('UP')">⬆️</button>
+        <div class="horizontal-controls">
+            <button class="ctrl-btn" ontstart="setDir('LEFT'); event.preventDefault();" onclick="setDir('LEFT')">⬅️</button>
+            <button class="ctrl-btn" ontstart="setDir('RIGHT'); event.preventDefault();" onclick="setDir('RIGHT')">➡️</button>
+        </div>
+        <button class="ctrl-btn" ontstart="setDir('DOWN'); event.preventDefault();" onclick="setDir('DOWN')">⬇️</button>
+    </div>
+
+    <div class="instructions">Telefonda butonlara dokun, bilgisayarda ok tuşlarını kullan!</div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -135,53 +178,7 @@
             if (keyPressed === 40) setDir('DOWN');
         }
 
-        // --- KESİN ÇÖZÜM: CANVAS ÜZERİNDE SWIPE KONTROLLERİ ---
-        let touchStartX = 0;
-        let touchStartY = 0;
-
-        canvas.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 0) {
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
-            }
-            e.preventDefault();
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault(); // Sayfanın kaymasını engeller
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', (e) => {
-            if (!touchStartX || !touchStartY) return;
-
-            let touchEndX = e.changedTouches[0].clientX;
-            let touchEndY = e.changedTouches[0].clientY;
-
-            let diffX = touchEndX - touchStartX;
-            let diffY = touchEndY - touchStartY;
-
-            // Hassasiyet eşiği (yanlış dokunmaları önlemek için)
-            if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) return;
-
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                if (diffX > 0) {
-                    setDir('RIGHT');
-                } else {
-                    setDir('LEFT');
-                }
-            } else {
-                if (diffY > 0) {
-                    setDir('DOWN');
-                } else {
-                    setDir('UP');
-                }
-            }
-
-            touchStartX = 0;
-            touchStartY = 0;
-            e.preventDefault();
-        }, { passive: false });
-
+        // --- ORTAK YÖN DEĞİŞTİRME FONKSİYONU ---
         function setDir(dir) {
             if (changingDirection) return;
 
